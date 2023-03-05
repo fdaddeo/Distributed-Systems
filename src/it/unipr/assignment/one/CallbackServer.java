@@ -16,40 +16,44 @@ public class CallbackServer
 	public static void main(final String[] args) throws Exception 
 	{
 	    Registry registry = LocateRegistry.createRegistry(PORT);
-	    Set<PriceWriter> writers = new CopyOnWriteArraySet<>();
-	    Subscribe service = new SubscribeImpl(writers);
+	    Set<OfferClientInterface> clientReferences = new CopyOnWriteArraySet<>();
+	    OfferServerInterface service = new OfferServerInterfaceImpl(clientReferences);
 	    
 	    Random random = new Random();
+		int iter_count = 0;
 
 	    registry.rebind("subscribe", service);
 	    
 	    while (true)
 	    {
-	    	int randomPrice = random.nextInt(MAX - MIN) + MIN;
-	    	
-	    	try
-	    	{
-	    		for (PriceWriter w : writers)
-	    		{
-	    			w.setPrice(randomPrice);
-	    			System.out.println("Sending price: " + randomPrice);
-	    		}
-	    		
-	    		Thread.sleep(1000);
-	    		
-	    		for (PriceWriter w : writers)
-	    		{
-	    			if (w.getPurchaseOffer() >= w.getPrice())
-	    			{
-	    				w.addPurchaseDone();
-	    				System.out.println("Offer received and accepted: " + w.getPurchaseOffer());
-	    			}
-	    		}
-	    	}
+			try
+			{
+				int randomPrice = random.nextInt(MAX - MIN) + MIN;
+
+				service.setServerPrice(randomPrice);
+
+				for (OfferClientInterface clientRef : clientReferences)
+				{
+					clientRef.setServerPrice(randomPrice);
+					System.out.println("Sending price: " + randomPrice);
+					iter_count++;
+				}
+
+				// iter_count for debug
+				if (clientReferences.size() == 0 && iter_count > 0)
+				{
+					break;
+				}
+
+				Thread.sleep(3000);
+			}
 	    	catch (Exception e)
 	    	{
-	    		System.out.println(e);
+	    		e.printStackTrace();
 	    	}
 	    }
+
+		service.close();
+		System.out.println("Server Terminated");
 	}
 }
