@@ -31,7 +31,7 @@ public class OfferClientInterfaceImpl extends UnicastRemoteObject implements Off
 
 		if (purchaseOffer >= price)
 		{
-			boolean offerAccepted = serverReference.evaluatePurchaseOffer(purchaseOffer);
+			boolean offerAccepted = this.serverReference.evaluatePurchaseOffer(purchaseOffer);
 
 			System.out.println("Sending offer...");
 
@@ -48,10 +48,15 @@ public class OfferClientInterfaceImpl extends UnicastRemoteObject implements Off
 
 		if (this.purchasesDone > 9)
 		{
-			serverReference.unregister(this);
-			UnicastRemoteObject.unexportObject(this, true);
-
-			System.out.println("Client Terminated");
+			closeConnection();
 		}
+	}
+
+	private void closeConnection() throws RemoteException
+	{
+		this.serverReference.unregister(this);
+		UnicastRemoteObject.unexportObject(this, true);
+
+		System.out.println("Client Terminated");
 	}
 }
