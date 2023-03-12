@@ -18,8 +18,6 @@ public class ServerThread implements Runnable
     private Socket socket;
 	private Random random;
 
-    private int randomPrice;
-
     public ServerThread(final Server server, final Socket socket)
     {
         this.server = server;
@@ -48,7 +46,7 @@ public class ServerThread implements Runnable
             try
             {
 				int randomPrice = this.random.nextInt(MAX - MIN) + MIN;
-                Offer price = new Offer(randomPrice);
+                Price price = new Price(randomPrice);
                 
                 System.out.println("Sending price: " + randomPrice);
 
@@ -60,22 +58,30 @@ public class ServerThread implements Runnable
                 os.writeObject(price);
                 os.flush();
 
-                Object offer = is.readObject();
+                Object object = is.readObject();
 
-                if (price instanceof Offer)
+                if (object instanceof Offer)
                 {
-                    Offer status = (Offer) offer;
+                    Offer clientOffer = (Offer) object;
+                    Response serverResponse = new Response(randomPrice, clientOffer.getClientOffer(), false);
 
-                    if (status.getOffer() >= randomPrice)
+                    if (clientOffer.getClientOffer() >= randomPrice)
                     {
-                        status.setOfferAccepted(true);
-                    }
-                    else 
-                    {
-                        status.setOfferAccepted(false);
-                    }
+                        serverResponse.setOfferAccepted(true);
 
-                    os.writeObject(status);
+                        os.writeObject(serverResponse);
+                        os.flush();
+                    }
+                }
+                else if (object instanceof CloseConnectionMessage)
+                {
+                    CloseConnectionMessage clienteCloseConnection = (CloseConnectionMessage) object;
+
+                    if (clienteCloseConnection.getCloseConnection())
+                    {
+                        this.server.removeSocketFromList(this.socket);
+                        break;
+                    }
                 }
 
                 Thread.sleep(SLEEPTIME);

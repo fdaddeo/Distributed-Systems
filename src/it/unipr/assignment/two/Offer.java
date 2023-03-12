@@ -4,45 +4,32 @@ import java.io.Serializable;
 
 public class Offer implements Serializable
 {
-    private int price;
-    private int offer;
+    private int serverPrice;
+    private int clientOffer;
 
-    private boolean offerAccepted;
-
-    public Offer(int price)
+    public Offer(int serverPrice, int clientOffer)
     {
-        this.price = price;
-        this.offer = 0;
-        this.offerAccepted = false;
+        this.serverPrice = serverPrice;
+        this.clientOffer = clientOffer;
     }
 
-    public int getPrice()
+    public int getServerPrice()
     {
-        return this.price;
+        return this.serverPrice;
     }
 
-    public void setPrice(int newPrice)
+    public void setServerPrice(int randomPrice)
     {
-        this.price = newPrice;
+        this.serverPrice = randomPrice;
     }
 
-    public int getOffer()
+    public int getClientOffer()
     {
-        return this.offer;
+        return this.clientOffer;
     }
 
-    public void setOffer(int newOffer)
+    public void setClientOffer(int offer)
     {
-        this.offer = newOffer;
-    }
-
-    public void setOfferAccepted(boolean status)
-    {
-        this.offerAccepted = status;
-    }
-
-    public boolean getOfferAccepted()
-    {
-        return this.offerAccepted;
+        this.clientOffer = offer;
     }
 }

@@ -34,33 +34,38 @@ public final class Client
                     is = new ObjectInputStream(new BufferedInputStream(client.getInputStream()));
                 }
 
-                Object price = is.readObject();
+                Object object = is.readObject();
 
-                if (price instanceof Offer)
+                if (object instanceof Price)
                 {
-                    Offer offer = (Offer) price;
+                    Price receivedPriceObject = (Price) object;
                     int randomOffer = random.nextInt(MAX - MIN) + MIN;
+                    int priceReceived = receivedPriceObject.getServerPrice();
 
-                    System.out.println("Price: " + offer.getPrice() + " received, offer generated is: " + randomOffer);
+                    Offer clientOffer = new Offer(priceReceived, randomOffer);
 
-                    if (randomOffer >= offer.getPrice())
+                    System.out.println("Price: " + priceReceived + " received, offer generated is: " + randomOffer);
+
+                    if (randomOffer >= priceReceived)
                     {
-                        offer.setOffer(randomOffer);
-
-                        os.writeObject(offer);
+                        os.writeObject(clientOffer);
                         os.flush();
 
                         System.out.println("Sending offer...");
                     }
+                    else
+                    {
+                        clientOffer.setClientOffer(0);
+
+                        os.writeObject(clientOffer);
+                        os.flush();
+                    }
                 }
-
-                Object status = is.readObject();
-
-                if (status instanceof Offer)
+                else if (object instanceof Response)
                 {
-                    Offer offerStatus = (Offer) status;
+                    Response serverResponse = (Response) object;
 
-                    if (offerStatus.getOfferAccepted())
+                    if (serverResponse.getOfferAccepted())
                     {
                         purchasesDone++;
                         System.out.println("Offer Accepted");
@@ -73,6 +78,10 @@ public final class Client
 
                 if (purchasesDone > 9)
                 {
+                    CloseConnectionMessage closeConnection = new CloseConnectionMessage(true);
+
+                    os.writeObject(closeConnection);
+                    os.flush();
                     break;
                 }
             }
