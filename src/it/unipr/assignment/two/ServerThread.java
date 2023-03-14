@@ -79,7 +79,12 @@ public class ServerThread implements Runnable
 
                     if (clienteCloseConnection.getCloseConnection())
                     {
-                        this.server.removeSocketFromList(this.socket);
+                        if (this.server.getPool().getActiveCount() == 1)
+                        {
+                            this.server.close();
+                        }
+
+                        this.socket.close();
                         break;
                     }
                 }

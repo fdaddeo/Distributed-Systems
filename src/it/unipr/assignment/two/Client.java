@@ -86,6 +86,7 @@ public final class Client
                 }
             }
 
+            System.out.println("Client closed.");
             client.close();
         }
         catch (IOException | ClassNotFoundException e)
