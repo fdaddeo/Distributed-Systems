@@ -18,6 +18,8 @@ public class Server
 	private ServerSocket socket;
 	private ThreadPoolExecutor pool;
 
+	private int clientServed = 0;
+
 	public Server() throws IOException
 	{
 		this.socket = new ServerSocket(SPORT);
@@ -59,6 +61,16 @@ public class Server
 		{
 			e.printStackTrace();
 		}
+	}
+
+	public synchronized void addClientServed()
+	{
+		this.clientServed++;
+	}
+
+	public int getCliendServed()
+	{
+		return this.clientServed;
 	}
 
 	public static void main(final String[] args) throws IOException

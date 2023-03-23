@@ -79,7 +79,9 @@ public class ServerThread implements Runnable
 
                     if (clienteCloseConnection.getCloseConnection())
                     {
-                        if (this.server.getPool().getActiveCount() == 1)
+                        this.server.addClientServed();
+
+                        if (this.server.getPool().getActiveCount() == 1 && this.server.getCliendServed() >= 3)
                         {
                             this.server.close();
                         }
