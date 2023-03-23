@@ -68,10 +68,10 @@ public class ServerThread implements Runnable
                     if (clientOffer.getClientOffer() >= randomPrice)
                     {
                         serverResponse.setOfferAccepted(true);
-
-                        os.writeObject(serverResponse);
-                        os.flush();
                     }
+
+                    os.writeObject(serverResponse);
+                    os.flush();
                 }
                 else if (object instanceof CloseConnectionMessage)
                 {
