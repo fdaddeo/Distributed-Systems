@@ -1,8 +1,12 @@
 package it.unipr.assignment.three;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.net.URL;
 import java.util.ArrayList;
+import java.util.Scanner;
 
 import javax.jms.Message;
 import javax.jms.TextMessage;
@@ -14,13 +18,13 @@ public class Node
 {
 	private static final String BROKER_URL = "tcp://localhost:61616";
 	private static final String BROKER_PROPS = "persistent=false&useJmx=false";
-	private static final String FILE_PATH = "Conf.txt";
+	private static final String FILE_PATH = "config.txt";
 
 	private static State nodeState;
 
 	public static void main(String[] args) throws Exception 
 	{
-		int id = Integer.parseInt(args[1]);
+		int id = Integer.parseInt(args[0]);
 
 		if (id == 0) 
 		{
@@ -28,18 +32,26 @@ public class Node
 			broker.start();
 		}
 
-		FileReader input = new FileReader(FILE_PATH);
-		BufferedReader bufRead = new BufferedReader(input);
-		String myLine = null;
+		URL fileUrl = Node.class.getResource(FILE_PATH);
 		ArrayList<String> queueNames = new ArrayList<String>();
 
-		while ((myLine = bufRead.readLine()) != null) 
+		try 
 		{
-			queueNames.add(myLine);
+			File myObj = new File(fileUrl.getPath());
+			Scanner myReader = new Scanner(myObj);
+			
+			while (myReader.hasNextLine()) 
+			{
+				String data = myReader.nextLine();
+				queueNames.add(data);
+			}
+			myReader.close();
+		} 
+		catch (FileNotFoundException e) 
+		{
+			System.out.println("An error occurred.");
+			e.printStackTrace();
 		}
-
-		bufRead.close();
-		input.close();
 
 		if (id == queueNames.size() - 1) 
 		{
@@ -50,7 +62,7 @@ public class Node
 			nodeState = State.IDLE;
 		}
 
-		String queueName = "queue" + args[1];
+		String queueName = "queue" + args[0];
 		Receiver receiver = new Receiver(queueName);
 		Sender sender = new Sender(queueNames);
 
@@ -79,19 +91,27 @@ public class Node
 					int senderId = Integer.parseInt(parsedMessage[0]);
 					String messageType = parsedMessage[1];
 
+					System.out.println("Message: " + messageType + " received.");
+
 					if (messageType.equals("ELECTION"))
-					{
+					{				
 						sender.sendElectionAck(id, senderId);
 						nodeState = State.CANDIDATE;
+
+						System.out.print("Now I am a candidate");
 					}
 					else if (messageType.equals("ELECTION_ACK"))
-					{
+					{						
 						nodeState = State.IDLE;
+
+						System.out.println("Now I am in idle state.");
 					}
 					else if (messageType.equals("COORDINATOR"))
 					{
 						coordinatorId = senderId;
 						nodeState = State.REQUESTER;
+
+						System.out.println("Now I am a requester.");
 					}
 				}
 			}
