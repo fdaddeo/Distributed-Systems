@@ -26,4 +26,10 @@ Once received the purchase offer, the server sends a confirmation to the client 
 Each client ends its processing after at least 10 purchases.
 The server stops as there are no more client to serve.
 
-This first assignment can be found in the `it.unipr.assignment.two` package.
+This second assignment can be found in the `it.unipr.assignment.two` package.
+
+## Third Assignment - Java Messaging System
+
+TODO
+
+This third assignment can be found in the `it.unipr.assignment.three` package.
