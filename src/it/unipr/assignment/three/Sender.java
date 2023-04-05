@@ -11,6 +11,7 @@ import javax.jms.TextMessage;
 
 import org.apache.activemq.ActiveMQConnection;
 import org.apache.activemq.ActiveMQConnectionFactory;
+import org.apache.activemq.broker.jmx.Sensitive;
 
 public class Sender 
 {
@@ -32,9 +33,9 @@ public class Sender
 
 		for (String queueName : queueNames) {
 
-			Queue queue = session.createQueue(queueName);
-			QueueSender sender = session.createSender(queue);
-			senders.add(sender);
+			Queue queue = this.session.createQueue(queueName);
+			QueueSender sender = this.session.createSender(queue);
+			this.senders.add(sender);
 		}
 	}
 
@@ -43,14 +44,14 @@ public class Sender
 		for(int i = sender + 1; i < senders.size(); i++) 
 		{			
 			TextMessage message = this.generateTextMessage(sender, MessageType.ELECTION);
-			senders.get(i).send(message);	
+			this.senders.get(i).send(message);	
 		}
 	}
 
 	public void sendElectionAck(final int sender, final int receiver) throws JMSException 
 	{		
 		TextMessage message = this.generateTextMessage(sender, MessageType.ELECTION_ACK);
-		senders.get(receiver).send(message);
+		this.senders.get(receiver).send(message);
 	}
 
 	public void sendCoordinatorMsg(final int sender) throws JMSException 
@@ -58,8 +59,20 @@ public class Sender
 		for(int i = sender - 1; i >= 0; i--)
 		{			
 			TextMessage message = this.generateTextMessage(sender, MessageType.COORDINATOR);
-			senders.get(i).send(message);	
+			this.senders.get(i).send(message);	
 		}
+	}
+
+	public void sendRequestMsg(final int sender, final int coordinator) throws JMSException
+	{
+		TextMessage message = this.generateTextMessage(sender, MessageType.REQUEST);
+		this.senders.get(coordinator).send(message);
+	}
+
+	public void sendPermissionMsg(final int sender, final int receiver) throws JMSException
+	{
+		TextMessage message = this.generateTextMessage(sender, MessageType.PERMISSION);
+		this.senders.get(receiver).send(message);
 	}
 
 	public void close() throws JMSException 
@@ -87,6 +100,13 @@ public class Sender
 			case COORDINATOR:
 				message.setText(Integer.toString(sender) + ":COORDINATOR");
 				break;
+
+			case REQUEST:
+				message.setText(Integer.toString(sender) + ":REQUEST");
+				break;
+
+			case PERMISSION:
+				message.setText(Integer.toString(sender) + ":PERMISSION");
 
 			default:
 				break;

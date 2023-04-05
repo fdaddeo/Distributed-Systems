@@ -5,5 +5,7 @@ public enum MessageType
     ELECTION,
     ELECTION_ACK,
     COORDINATOR,
+    REQUEST,
+    PERMISSION,
 	PING;  
 }

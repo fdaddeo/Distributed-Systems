@@ -40,6 +40,16 @@ public class Receiver
 		return this.receiver.receive(waitTime);
 	}
 
+	public void flushQueue() throws JMSException
+	{
+		Message msg = this.receiver.receiveNoWait();
+
+		while (msg != null)
+		{
+			msg = this.receiver.receiveNoWait();
+		}
+	}
+
 	public void close() throws JMSException 
 	{
 		if (this.connection != null) {
