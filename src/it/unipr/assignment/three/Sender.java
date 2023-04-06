@@ -11,7 +11,6 @@ import javax.jms.TextMessage;
 
 import org.apache.activemq.ActiveMQConnection;
 import org.apache.activemq.ActiveMQConnectionFactory;
-import org.apache.activemq.broker.jmx.Sensitive;
 
 public class Sender 
 {
