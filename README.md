@@ -30,6 +30,20 @@ This second assignment can be found in the `it.unipr.assignment.two` package.
 
 ## Third Assignment - Java Messaging System
 
-TODO
+The goal is to realize a system implementing the mutual exclusion centralized algorithm, using the JMS API.
+The system is made by a number of nodes, each of one can be active or inactive. One of these nodes has to act as coordinator while the others act as executors.
+Before executing its job, each node can change its status (from active to inactive and vice versa). In particular, it becomes active with probability `H` and it becomes inactive with probability `K`.
+
+The coordinator has two tasks: the first one is to assign the shared resources to an executor and the second one is to detect when the executor holding the resource becomes inactive.
+
+The executors have two task: executing on the shared resource in a concurrent way and check if the coordinator is still alive. When an executor suspects for the coordinator inactivity, then it starts a new election process by the Bully algorithm. In particular, an executor randomly decides to ask for the resource:
+
+- if it chooses to ask, then:
+  - randomly chooses a timeout and completes the request if receives the permission before the timeout expires;
+  - randomly chooses another timeout waits and then it restarts;
+  - ask for a new coordinator if receives no permission before the first timeout;
+- else:
+  - randomly chooses a timeout and waits;
+  - then it restarts.
 
 This third assignment can be found in the `it.unipr.assignment.three` package.
