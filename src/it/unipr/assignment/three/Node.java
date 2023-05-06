@@ -21,10 +21,11 @@ public class Node
 	private static final String BROKER_PROPS = "persistent=false&useJmx=false";
 	private static final String FILE_PATH = "config.txt";
 
+	private static final long EXECUTION_TIME = 1000;
 	private static final long DEFAULT_WAIT_TIME = 5000;
-
 	private static final long MAX_WAIT = 1000;
 	private static final long MIN_WAIT = 500;
+	
 	private static final int MAX = 100;
 	private static final int MIN = 0;
 	private static final int H = 20;
@@ -89,6 +90,7 @@ public class Node
 			if (randomInt < K)
 			{
 				nodeState = State.DEAD;
+				resourceOccupied = false;
 			}
 			else if (randomInt < K + H && nodeState == State.DEAD)
 			{
@@ -102,49 +104,68 @@ public class Node
 					if (coordinatorId != -1)
 					{
 						randomInt = random.nextInt(MAX - MIN) + MIN;
+						System.out.println("IDLE: generated " + Integer.toString(randomInt));
 
 						// 50% propability
 						if (randomInt < 50)
 						{
 							nodeState = State.REQUESTER;
+							System.out.println("IDLE: passing to REQUESTER state");
 						}
 					}
-
 					break;
 
 				case REQUESTER:
+					System.out.println("REQUESTER: sending request message");
 					sender.sendRequestMsg(id, coordinatorId);
+					System.out.println("REQUESTER: passing to WAITER state");
 					nodeState = State.WAITER;
 				
 				case WAITER:
 					waitTime = random.nextLong(MAX_WAIT - MIN_WAIT) + MIN_WAIT;
+					System.out.println("WAITER: waiting " + Long.toString(waitTime));
+					break;
+
+				case USER:
+					System.out.println("USER: now in critical section");
+					Thread.sleep(EXECUTION_TIME); // Do something
+					System.out.println("USER: leaving critical section");
+					sender.sendTerminatedExecutionMsg(id, coordinatorId);
+					Thread.sleep(random.nextLong(MAX_WAIT - MIN_WAIT) + MIN_WAIT); // Random timeout
+					System.out.println("USER: passing to IDLE state");
+					nodeState = State.IDLE;
 					break;
 
 				case CANDIDATE:
-					if (id == queueNames.size() - 1)
-					{
-						sender.sendCoordinatorMsg(id);
-						nodeState = State.COORDINATOR;
-						coordinatorId = id;
-					}
-					else
-					{
-						sender.sendElectionMsg(id);
-					}
-
+					System.out.println("CANDIDATE: sending ELECTION message");
+					sender.sendElectionMsg(id);
+					// if (id == queueNames.size() - 1)
+					// {
+					// 	System.out.println("CANDIDATE: biggest ID, passing to COORDINATOR state");
+					// 	nodeState = State.COORDINATOR;
+					// 	coordinatorId = id;
+					// 	resourceOccupied = false;
+					// 	sender.sendCoordinatorMsg(id);
+					// }
+					// else
+					// {
+					// 	System.out.println("CANDIDATE: sending ELECTION message");
+					// 	sender.sendElectionMsg(id);
+					// }
 					break;
 
 				case COORDINATOR:
 					if (requests.size() != 0 && !resourceOccupied)
 					{
+						System.out.println("COORDINATOR: sending PERMISSION message to node " + Integer.toString(requests.get(0)));
 						sender.sendPermissionMsg(id, requests.get(0));
 						requests.remove(0);
 						resourceOccupied = true;
 					}
-
 					break;
 
 				case DEAD:
+					System.out.println("DEAD: waiting...");
 					Thread.sleep(1000);
 					continue;
 
@@ -161,6 +182,8 @@ public class Node
 				{
 					nodeState = State.COORDINATOR;
 					coordinatorId = id;
+					resourceOccupied = false;
+					requests.clear();
 					sender.sendCoordinatorMsg(id);
 
 					System.out.println("Now I am the coordinator.");
@@ -180,28 +203,22 @@ public class Node
 					int senderId = Integer.parseInt(parsedMessage[0]);
 					String messageType = parsedMessage[1];
 
-					System.out.println("Message: " + messageType + " received.");
+					System.out.println("Message: " + messageType + " received from " + Integer.toString(senderId));
 
 					if (messageType.equals("ELECTION"))
 					{				
 						sender.sendElectionAck(id, senderId);
 						nodeState = State.CANDIDATE;
-
-						System.out.print("Now I am a candidate");
 					}
 					else if (messageType.equals("ELECTION_ACK"))
 					{
 						coordinatorId = -1;			
 						nodeState = State.IDLE;
-
-						System.out.println("Now I am in idle state.");
 					}
 					else if (messageType.equals("COORDINATOR"))
 					{
 						coordinatorId = senderId;
-						nodeState = State.REQUESTER;
-
-						System.out.println("Now I am a requester.");
+						nodeState = State.IDLE;
 					}
 					else if (messageType.equals("REQUEST"))
 					{
@@ -209,7 +226,11 @@ public class Node
 					}
 					else if (messageType.equals("PERMISSION"))
 					{
-						// TODO: permission message received.
+						nodeState = State.USER;
+					}
+					else if (messageType.equals("EX_TERMINATED"))
+					{
+						resourceOccupied = false;
 					}
 				}
 			}

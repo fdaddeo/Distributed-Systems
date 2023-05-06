@@ -74,6 +74,12 @@ public class Sender
 		this.senders.get(receiver).send(message);
 	}
 
+	public void sendTerminatedExecutionMsg(final int sender, final int coordinator) throws JMSException
+	{
+		TextMessage message = this.generateTextMessage(sender, MessageType.EX_TERMINATED);
+		this.senders.get(coordinator).send(message);
+	}
+
 	public void close() throws JMSException 
 	{
 		if (this.connection != null) 
@@ -106,6 +112,11 @@ public class Sender
 
 			case PERMISSION:
 				message.setText(Integer.toString(sender) + ":PERMISSION");
+				break;
+
+			case EX_TERMINATED:
+				message.setText(Integer.toString(sender) + ":EX_TERMINATED");
+				break;
 
 			default:
 				break;

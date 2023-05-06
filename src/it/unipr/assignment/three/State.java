@@ -4,6 +4,7 @@ public enum State
 {	
 	IDLE, 
 	REQUESTER,
+	USER,
 	COORDINATOR,
 	WAITER,
 	CANDIDATE,

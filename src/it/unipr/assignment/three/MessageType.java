@@ -7,5 +7,6 @@ public enum MessageType
     COORDINATOR,
     REQUEST,
     PERMISSION,
+    EX_TERMINATED,
 	PING;  
 }
