@@ -21,11 +21,11 @@ public class Node
 	private static final String BROKER_PROPS = "persistent=false&useJmx=false";
 	private static final String FILE_PATH = "config.txt";
 
-	private static final long EXECUTION_TIME = 1000;
 	private static final long DEFAULT_WAIT_TIME = 5000;
 	private static final long MAX_WAIT = 1000;
 	private static final long MIN_WAIT = 500;
 	
+	private static final int EXECUTION_COUNTER = 100;
 	private static final int MAX = 100;
 	private static final int MIN = 0;
 	private static final int H = 20;
@@ -82,6 +82,11 @@ public class Node
 		Sender sender = new Sender(queueNames);
 
 		int coordinatorId = -1;
+		int userId = -1;
+		int userCounter = 0;
+
+		boolean pingSent = false;
+		boolean pingAckReceived = false;
 
 		while (true) 
 		{
@@ -127,41 +132,48 @@ public class Node
 					break;
 
 				case USER:
+					// TODO: use counter
 					System.out.println("USER: now in critical section");
-					Thread.sleep(EXECUTION_TIME); // Do something
-					System.out.println("USER: leaving critical section");
-					sender.sendTerminatedExecutionMsg(id, coordinatorId);
-					Thread.sleep(random.nextLong(MAX_WAIT - MIN_WAIT) + MIN_WAIT); // Random timeout
-					System.out.println("USER: passing to IDLE state");
-					nodeState = State.IDLE;
+					// Thread.sleep(EXECUTION_WAIT_TIME); // Do something
+					userCounter += 1;
+
+					if (userCounter >= EXECUTION_COUNTER)
+					{
+						System.out.println("USER: leaving critical section");
+						sender.sendTerminatedExecutionMsg(id, coordinatorId);
+						Thread.sleep(random.nextLong(MAX_WAIT - MIN_WAIT) + MIN_WAIT); // Random timeout
+						System.out.println("USER: passing to IDLE state");
+						nodeState = State.IDLE;
+					}
+					
 					break;
 
 				case CANDIDATE:
 					System.out.println("CANDIDATE: sending ELECTION message");
 					sender.sendElectionMsg(id);
-					// if (id == queueNames.size() - 1)
-					// {
-					// 	System.out.println("CANDIDATE: biggest ID, passing to COORDINATOR state");
-					// 	nodeState = State.COORDINATOR;
-					// 	coordinatorId = id;
-					// 	resourceOccupied = false;
-					// 	sender.sendCoordinatorMsg(id);
-					// }
-					// else
-					// {
-					// 	System.out.println("CANDIDATE: sending ELECTION message");
-					// 	sender.sendElectionMsg(id);
-					// }
 					break;
 
 				case COORDINATOR:
+					if (resourceOccupied && pingSent && !pingAckReceived)
+					{
+						resourceOccupied = false;
+					}
+
+					if (resourceOccupied)
+					{
+						System.out.println("COORDINATOR: sending PING message to node " + Integer.toString(userId));
+						sender.sendPingMsg(id, userId);
+						pingSent = true;
+					}
+
 					if (requests.size() != 0 && !resourceOccupied)
 					{
 						System.out.println("COORDINATOR: sending PERMISSION message to node " + Integer.toString(requests.get(0)));
 						sender.sendPermissionMsg(id, requests.get(0));
-						requests.remove(0);
+						userId = requests.remove(0);
 						resourceOccupied = true;
 					}
+
 					break;
 
 				case DEAD:
@@ -191,6 +203,11 @@ public class Node
 				else if (nodeState == State.WAITER)
 				{
 					nodeState = State.CANDIDATE;
+				}
+				else if (nodeState == State.COORDINATOR && resourceOccupied && pingSent)
+				{
+					// no PING_ACK received, release the resource
+					pingAckReceived = false;
 				}
 			}
 			else
@@ -227,10 +244,20 @@ public class Node
 					else if (messageType.equals("PERMISSION"))
 					{
 						nodeState = State.USER;
+						userCounter = 0;
 					}
 					else if (messageType.equals("EX_TERMINATED"))
 					{
 						resourceOccupied = false;
+					}
+					else if (messageType.equals("PING"))
+					{
+						sender.sendPingAckMsg(id, senderId);
+					}
+					else if (messageType.equals("PING_ACK"))
+					{
+						pingSent = false;
+						pingAckReceived = true;
 					}
 				}
 			}

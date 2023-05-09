@@ -8,5 +8,6 @@ public enum MessageType
     REQUEST,
     PERMISSION,
     EX_TERMINATED,
-	PING;  
+	PING,
+    PING_ACK;
 }

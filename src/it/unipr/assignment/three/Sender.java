@@ -80,6 +80,18 @@ public class Sender
 		this.senders.get(coordinator).send(message);
 	}
 
+	public void sendPingMsg(final int sender, final int receiver) throws JMSException
+	{
+		TextMessage message = this.generateTextMessage(sender, MessageType.PING);
+		this.senders.get(receiver).send(message);
+	}
+
+	public void sendPingAckMsg(final int sender, final int receiver) throws JMSException
+	{
+		TextMessage message = this.generateTextMessage(sender, MessageType.PING_ACK);
+		this.senders.get(receiver).send(message);
+	}
+
 	public void close() throws JMSException 
 	{
 		if (this.connection != null) 
@@ -116,6 +128,14 @@ public class Sender
 
 			case EX_TERMINATED:
 				message.setText(Integer.toString(sender) + ":EX_TERMINATED");
+				break;
+			
+			case PING:
+				message.setText(Integer.toString(sender) + ":PING");
+				break;
+
+			case PING_ACK:
+				message.setText(Integer.toString(sender) + ":PING_ACK");
 				break;
 
 			default:
