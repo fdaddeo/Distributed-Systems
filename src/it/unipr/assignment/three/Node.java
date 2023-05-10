@@ -21,6 +21,8 @@ public class Node
 	private static final String BROKER_PROPS = "persistent=false&useJmx=false";
 	private static final String FILE_PATH = "config.txt";
 
+	private static final long PING_RATE_TIME = 1000;
+	private static final long PING_CHECK_RATE_TIME = 2000;
 	private static final long DEFAULT_WAIT_TIME = 5000;
 	private static final long MAX_WAIT = 1000;
 	private static final long MIN_WAIT = 500;
@@ -81,12 +83,13 @@ public class Node
 		Receiver receiver = new Receiver(queueName);
 		Sender sender = new Sender(queueNames);
 
+		long prevMillisPing = System.currentTimeMillis();
+		long prevMillisPingCheck = System.currentTimeMillis();
+
 		int coordinatorId = -1;
-		int userId = -1;
 		int userCounter = 0;
 
-		boolean pingSent = false;
-		boolean pingAckReceived = false;
+		boolean pingReceived = false;
 
 		while (true) 
 		{
@@ -132,11 +135,18 @@ public class Node
 					break;
 
 				case USER:
-					// TODO: use counter
 					System.out.println("USER: now in critical section");
-					// Thread.sleep(EXECUTION_WAIT_TIME); // Do something
+					// Do something
 					userCounter += 1;
 
+					// Send ping message every PING_RATE_TIME milliseconds
+					if (System.currentTimeMillis() - prevMillisPing >= PING_RATE_TIME)
+					{
+						sender.sendPingMsg(id, coordinatorId);
+						System.out.println("USER: sending PING message to node " + Integer.toString(coordinatorId));
+						prevMillisPing = System.currentTimeMillis();
+					}
+					
 					if (userCounter >= EXECUTION_COUNTER)
 					{
 						System.out.println("USER: leaving critical section");
@@ -154,23 +164,22 @@ public class Node
 					break;
 
 				case COORDINATOR:
-					if (resourceOccupied && pingSent && !pingAckReceived)
+					if (System.currentTimeMillis() - prevMillisPingCheck >= PING_CHECK_RATE_TIME)
 					{
-						resourceOccupied = false;
-					}
+						if (resourceOccupied && !pingReceived)
+						{
+							resourceOccupied = false;
+						}
 
-					if (resourceOccupied)
-					{
-						System.out.println("COORDINATOR: sending PING message to node " + Integer.toString(userId));
-						sender.sendPingMsg(id, userId);
-						pingSent = true;
+						pingReceived = false;
+						prevMillisPingCheck = System.currentTimeMillis();
 					}
 
 					if (requests.size() != 0 && !resourceOccupied)
 					{
 						System.out.println("COORDINATOR: sending PERMISSION message to node " + Integer.toString(requests.get(0)));
 						sender.sendPermissionMsg(id, requests.get(0));
-						userId = requests.remove(0);
+						requests.remove(0);
 						resourceOccupied = true;
 					}
 
@@ -195,6 +204,7 @@ public class Node
 					nodeState = State.COORDINATOR;
 					coordinatorId = id;
 					resourceOccupied = false;
+					prevMillisPingCheck = System.currentTimeMillis();
 					requests.clear();
 					sender.sendCoordinatorMsg(id);
 
@@ -203,11 +213,6 @@ public class Node
 				else if (nodeState == State.WAITER)
 				{
 					nodeState = State.CANDIDATE;
-				}
-				else if (nodeState == State.COORDINATOR && resourceOccupied && pingSent)
-				{
-					// no PING_ACK received, release the resource
-					pingAckReceived = false;
 				}
 			}
 			else
@@ -252,12 +257,7 @@ public class Node
 					}
 					else if (messageType.equals("PING"))
 					{
-						sender.sendPingAckMsg(id, senderId);
-					}
-					else if (messageType.equals("PING_ACK"))
-					{
-						pingSent = false;
-						pingAckReceived = true;
+						pingReceived = true;
 					}
 				}
 			}
