@@ -181,6 +181,7 @@ public class Node
 						sender.sendPermissionMsg(id, requests.get(0));
 						requests.remove(0);
 						resourceOccupied = true;
+						pingReceived = true;
 					}
 
 					break;
