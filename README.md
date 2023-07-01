@@ -1,6 +1,6 @@
 # Distributed Systems
 
-WORK IN PROGRESS. TODO.
+This repo contains the assignments done for "Distributed Systems" course.
 
 ## First Assignment - RMI and RPC
 
